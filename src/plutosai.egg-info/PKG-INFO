@@ -1,0 +1,109 @@
+Metadata-Version: 2.4
+Name: plutosai
+Version: 0.1.0
+Summary: AI-native family office framework utilities
+Author: PlutosAI
+Requires-Python: <3.12,>=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: fastapi>=0.112
+Requires-Dist: uvicorn[standard]>=0.30
+Requires-Dist: pydantic-settings>=2.4
+Requires-Dist: sqlmodel>=0.0.22
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0; extra == "dev"
+Requires-Dist: ruff>=0.1; extra == "dev"
+Requires-Dist: httpx>=0.27; extra == "dev"
+
+# PlutosAI — AI-Native Family Office Framework
+
+An execution-ready blueprint to build an AI-native family office and asset management firm. This repository provides a modular framework spanning compliance, security, data, AI/ML, operations, client service, and infrastructure. Use it as a foundation to accelerate regulatory readiness, operational excellence, and AI leverage from day one.
+
+## Vision
+
+- **Client-first, AI-augmented**: Empower advisors and investment teams with copilots to deliver highly personalized, real-time insights.
+- **Regulatory-grade from inception**: Design controls that scale with AUM and jurisdictional complexity.
+- **Composable, cloud-first architecture**: Interoperable services, audited data flows, portable infra.
+
+## Scope
+
+This framework covers:
+
+- Compliance and risk management baseline (Code of Ethics, P&P, AML/KYC, conflicts, valuation, best execution)
+- Security architecture and policies (zero trust, IAM, secrets, vendor risk, IR/BCP)
+- Data platform and governance (lakehouse, quality, lineage, retention, privacy)
+- AI/ML platform and MLOps (model registry, evaluation, guardrails, RAI)
+- Investment operations (portfolio accounting, OMS/EMS integration, reconciliation)
+- Client service (CRM, onboarding, reporting, portal)
+- Infrastructure-as-code (environments, CI/CD, observability)
+
+## Repository Layout
+
+```
+/docs
+  /compliance
+  /security
+  /data
+  /ai-ml
+  /ops
+  /infrastructure
+  /client
+  /org
+/templates
+  /policies
+  /sops
+  /checklists
+  /playbooks
+/reference
+```
+
+## Getting Started
+
+1) Clone this repo and review the baseline documents under `docs/`.
+2) Select cloud provider(s) and IaC tool (Terraform/Pulumi). See `docs/infrastructure/`.
+3) Stand up dev environment and landing zone. Implement IAM, logging, and secrets management first.
+4) Configure data platform (lakehouse) and governance. Add ingestion connectors for core systems.
+5) Establish AI/ML platform guardrails and evaluation harness before deploying pilot copilots.
+6) Tailor compliance policies to jurisdictions (e.g., SEC, FCA, MAS). Engage counsel for review.
+
+## Execution Roadmap (90-Day Sprint)
+
+- Week 1–2: Landing zone, IAM, secrets, SIEM, baseline policies, vendor inventory
+- Week 3–4: Data lakehouse and catalog, PII classification, DLP, ingestion MVP
+- Week 5–6: Model registry, eval harness, prompt safety, RAI controls, pilot copilots
+- Week 7–8: Client onboarding workflow, CRM schema, reporting pipeline, portal stub
+- Week 9–10: OMS/EMS connectivity plan, reconciliation design, valuation policy finalization
+- Week 11–12: DR/BCP tests, tabletop IR, SOC2 roadmap, automated evidence collection
+
+## Compliance Readiness
+
+- Code of Ethics, P&P manual, AML/KYC, trade surveillance, conflicts of interest
+- Personal trading, gifts/entertainment, outside business activities tracking
+- Business continuity and incident response playbooks with RTO/RPO objectives
+
+## Security Principles
+
+- Zero trust: strong identity, device posture, least privilege, short-lived creds
+- Secrets: centralized KMS/HSM, automatic rotation, no plaintext in repos
+- Data protection: tokenization, row/column permissions, differential privacy where appropriate
+
+## Data Platform
+
+- Lakehouse with medallion architecture (bronze/silver/gold)
+- Catalog + lineage (e.g., Unity, DataHub, OpenMetadata)
+- Quality SLAs and automated checks; retention and legal hold
+
+## AI/ML Platform
+
+- Model registry and evaluation gates; red-teaming and safety tests
+- Governance: dataset cards, model cards, usage policies, human-in-the-loop
+- Retrieval strategy patterns, privacy-preserving analytics, and audit logging
+
+## Client and Ops
+
+- CRM schema, onboarding workflow, KYC collection, e-sign integration
+- Reporting: client portal baseline, periodic statements, ad-hoc insights
+- Ops: reconciliation, cash management, fees, valuation controls
+
+## Contributing
+
+Use issues and PRs to propose improvements. All contributions must pass linting and security checks.

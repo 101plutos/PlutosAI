@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "plutosai-ai-service"
+version = "0.1.0"
+description = "AI service for PlutosAI"
+authors = [{ name = "PlutosAI" }]
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "fastapi>=0.112",
+    "uvicorn[standard]>=0.30",
+    "redis>=5.0",
+    "openai>=1.0",
+    "transformers>=4.35",
+    "torch>=2.1",
+    "prometheus-fastapi-instrumentator>=5.9",
+    "../../shared",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.1",
+    "mypy>=1.8",
+    "black>=23.0",
+    "isort>=5.12",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "I", "UP", "N", "B", "C4", "PIE", "RET", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+asyncio_mode = "auto"
+addopts = ["--strict-markers", "--tb=short"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["tests/*", "src/__init__.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+]

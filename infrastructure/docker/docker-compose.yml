@@ -1,0 +1,243 @@
+version: '3.8'
+
+services:
+  # Database
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: plutosai
+      POSTGRES_USER: plutosai_user
+      POSTGRES_PASSWORD: plutosai_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U plutosai_user -d plutosai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Message Queue
+  nats:
+    image: nats:2.10-alpine
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    command: ["-js"]
+    volumes:
+      - nats_data:/data
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8222"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Client Service
+  client-service:
+    build:
+      context: ../../services/client-service
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://plutosai_user:plutosai_password@postgres/plutosai
+      - NATS_URL=nats://nats:4222
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET_KEY=your-development-secret-key
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Investment Service
+  investment-service:
+    build:
+      context: ../../services/investment-ops
+      dockerfile: Dockerfile
+    ports:
+      - "8002:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://plutosai_user:plutosai_password@postgres/plutosai
+      - NATS_URL=nats://nats:4222
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET_KEY=your-development-secret-key
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Compliance Service
+  compliance-service:
+    build:
+      context: ../../services/compliance-service
+      dockerfile: Dockerfile
+    ports:
+      - "8003:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://plutosai_user:plutosai_password@postgres/plutosai
+      - NATS_URL=nats://nats:4222
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET_KEY=your-development-secret-key
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Reporting Service
+  reporting-service:
+    build:
+      context: ../../services/reporting-service
+      dockerfile: Dockerfile
+    ports:
+      - "8004:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://plutosai_user:plutosai_password@postgres/plutosai
+      - NATS_URL=nats://nats:4222
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET_KEY=your-development-secret-key
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # AI Service
+  ai-service:
+    build:
+      context: ../../services/ai-service
+      dockerfile: Dockerfile
+    ports:
+      - "8005:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://plutosai_user:plutosai_password@postgres/plutosai
+      - NATS_URL=nats://nats:4222
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET_KEY=your-development-secret-key
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Blockchain Service
+  blockchain-service:
+    build:
+      context: ../../services/blockchain-service
+      dockerfile: Dockerfile
+    ports:
+      - "8006:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://plutosai_user:plutosai_password@postgres/plutosai_blockchain
+      - NATS_URL=nats://nats:4222
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET_KEY=your-blockchain-service-secret-key
+      - ETHEREUM_RPC_URL=https://mainnet.infura.io/v3/YOUR_INFURA_KEY
+      - BSC_RPC_URL=https://bsc-dataseed1.binance.org/
+      - POLYGON_RPC_URL=https://polygon-rpc.com/
+      - COINGECKO_API_KEY=${COINGECKO_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # API Gateway
+  gateway-service:
+    build:
+      context: ../../services/gateway-service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - CLIENT_SERVICE_URL=http://client-service:8000
+      - INVESTMENT_SERVICE_URL=http://investment-service:8000
+      - COMPLIANCE_SERVICE_URL=http://compliance-service:8000
+      - REPORTING_SERVICE_URL=http://reporting-service:8000
+      - AI_SERVICE_URL=http://ai-service:8000
+      - BLOCKCHAIN_SERVICE_URL=http://blockchain-service:8000
+      - JWT_SECRET_KEY=your-development-secret-key
+    depends_on:
+      - client-service
+      - investment-service
+      - compliance-service
+      - reporting-service
+      - ai-service
+      - blockchain-service
+
+  # Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/rules:/etc/prometheus/rules:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    depends_on:
+      - prometheus
+
+volumes:
+  postgres_data:
+  nats_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:

@@ -1,0 +1,31 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+rule_files:
+  - /etc/prometheus/rules/slo_alerts.yml
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+  - job_name: 'client-service'
+    static_configs:
+      - targets: ['client-service:8001']
+  - job_name: 'blockchain-service'
+    static_configs:
+      - targets: ['blockchain-service:8006']
+  - job_name: 'ai-service'
+    static_configs:
+      - targets: ['ai-service:8005']
+  - job_name: 'nats'
+    static_configs:
+      - targets: ['nats:8222']
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']

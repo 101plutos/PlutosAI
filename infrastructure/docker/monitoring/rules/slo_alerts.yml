@@ -1,0 +1,27 @@
+groups:
+- name: slo_alerts
+  rules:
+  - alert: HighErrorRate
+    expr: sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) > 0.01
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      summary: High error rate detected
+      description: Error rate is above 1% for {{ $labels.job }}
+  - alert: HighLatency
+    expr: histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job)) > 1
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: High request latency
+      description: 99th percentile latency is above 1s for {{ $labels.job }}
+  - alert: LowAvailability
+    expr: up == 0
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: Service unavailable
+      description: Service {{ $labels.job }} is down

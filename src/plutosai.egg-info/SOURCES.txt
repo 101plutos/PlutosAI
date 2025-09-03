@@ -1,0 +1,17 @@
+README.md
+pyproject.toml
+src/plutosai/__init__.py
+src/plutosai/api_clients.py
+src/plutosai/app.py
+src/plutosai/db.py
+src/plutosai/models.py
+src/plutosai/schemas.py
+src/plutosai/settings.py
+src/plutosai.egg-info/PKG-INFO
+src/plutosai.egg-info/SOURCES.txt
+src/plutosai.egg-info/dependency_links.txt
+src/plutosai.egg-info/requires.txt
+src/plutosai.egg-info/top_level.txt
+tests/test_app.py
+tests/test_clients.py
+tests/test_version.py

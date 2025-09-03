@@ -1,0 +1,17 @@
+{
+  "id": "liq_0836497ee57f4a5f",
+  "wallet_address": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
+  "protocol": "uniswap",
+  "position_type": "liquidity",
+  "asset": "ETH/USDC",
+  "amount": "1",
+  "apr": 8.5,
+  "rewards": [
+    "UNI",
+    "SUSHI"
+  ],
+  "status": "active",
+  "value_usd": 1.0,
+  "created_at": "2025-08-28T15:59:16.287927",
+  "updated_at": "2025-08-28T15:59:16.287928"
+}

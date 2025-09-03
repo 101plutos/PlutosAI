@@ -1,0 +1,18 @@
+entities:
+  Client:
+    fields:
+      - id: string
+      - first_name: string
+      - last_name: string
+      - dob: date
+      - kyc_status: enum[Pending, Approved, Rejected]
+      - risk_profile: enum[Conservative, Moderate, Aggressive]
+  Account:
+    fields:
+      - id: string
+      - client_id: ref(Client.id)
+      - custodian: string
+      - type: enum[Brokerage, Bank, Crypto, Other]
+      - opened_at: datetime
+relations:
+  - Client.id -> Account.client_id
