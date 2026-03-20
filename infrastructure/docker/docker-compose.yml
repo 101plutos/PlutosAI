@@ -182,6 +182,29 @@ services:
       timeout: 10s
       retries: 3
 
+  # Simulation Service — MiroFish-inspired Financial Prediction Engine
+  simulation-service:
+    build:
+      context: ../../services/simulation-service
+      dockerfile: Dockerfile
+    ports:
+      - "8007:8007"
+    environment:
+      - SIM_REDIS_HOST=redis
+      - SIM_REDIS_PORT=6379
+      - SIM_REDIS_DB=2
+      - SIM_OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SIM_OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      - SIM_DEFAULT_MODEL=${SIM_DEFAULT_MODEL:-gpt-4o}
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8007/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   # API Gateway
   gateway-service:
     build:
@@ -196,6 +219,7 @@ services:
       - REPORTING_SERVICE_URL=http://reporting-service:8000
       - AI_SERVICE_URL=http://ai-service:8000
       - BLOCKCHAIN_SERVICE_URL=http://blockchain-service:8000
+      - SIMULATION_SERVICE_URL=http://simulation-service:8007
       - JWT_SECRET_KEY=your-development-secret-key
     depends_on:
       - client-service
@@ -204,6 +228,7 @@ services:
       - reporting-service
       - ai-service
       - blockchain-service
+      - simulation-service
 
   # Monitoring
   prometheus:
