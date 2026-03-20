@@ -1,0 +1,58 @@
+name: prediction-coach
+version: 1.0.0
+description: >
+  Grade your prediction market trades A-F on process quality (not outcome).
+  Kelly compliance audit, behavioural bias detection (overconfidence, recency,
+  football overconcentration, anchoring). Get specific coaching to improve edge.
+author: PlutosAI / Project Francesca
+category: finance
+tags: [prediction markets, polymarket, trading, kelly, bias, coaching, kalshi]
+
+runtime: python3
+entry: handler.py
+invoke: handle
+
+triggers:
+  - "grade trade"
+  - "trade grade"
+  - "coach"
+  - "kelly check"
+  - "bias check"
+  - "trade review"
+  - "prediction market"
+  - "polymarket review"
+
+parameters:
+  - name: market
+    description: What was the prediction market?
+    type: string
+    required: true
+  - name: position
+    description: What position did you take and why?
+    type: string
+    required: true
+  - name: outcome
+    description: Won/Lost — what happened?
+    type: string
+    required: true
+  - name: size_pct
+    description: Size as % of bankroll
+    type: number
+    required: true
+  - name: edge
+    description: Estimated edge at entry (0.0-1.0)
+    type: number
+    required: true
+  - name: odds
+    description: Decimal odds at entry
+    type: number
+    required: false
+    default: 1.0
+
+env:
+  - PLUTOSAI_FINANCE_URL
+
+permissions:
+  - http.post
+
+timeout: 60

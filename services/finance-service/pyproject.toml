@@ -18,6 +18,7 @@ dependencies = [
     "pydantic-settings>=2.0",
     "prometheus-fastapi-instrumentator>=5.9",
     "tzdata>=2024.1",    # ZoneInfo tzdata for Europe/Berlin
+    "websockets>=12.0",  # OpenClaw gateway push client
     "../../shared",
 ]
 

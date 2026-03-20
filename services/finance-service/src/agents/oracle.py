@@ -20,6 +20,7 @@ from typing import Any
 from openai import AsyncOpenAI
 
 from ..config import settings
+from .. import openclaw_client
 from ..models import (
     MarketAlert,
     MarketAlertSeverity,
@@ -173,6 +174,14 @@ async def evaluate_market_move(
         "ORACLE %s ALERT: %s %+.2f%% — %s",
         severity.value, symbol, move_pct, narrative[:60],
     )
+
+    # Push P0 alerts directly to Flo via OpenClaw gateway (within 5-minute SLA)
+    if severity == MarketAlertSeverity.P0:
+        import asyncio
+        asyncio.create_task(
+            openclaw_client.push_p0_alert(symbol, move_pct, narrative)
+        )
+
     return alert
 
 

@@ -23,6 +23,7 @@ from decimal import Decimal, ROUND_DOWN
 from zoneinfo import ZoneInfo
 
 from ..config import settings
+from .. import openclaw_client
 from ..models import (
     DrawdownLevel,
     DrawdownState,
@@ -221,6 +222,12 @@ def record_trade_outcome(proposal_id: str, pnl_eur: Decimal) -> None:
             "Drawdown level changed: %s → %s (drawdown=%.1f%%)",
             prev_level.value, _state.level.value, drawdown,
         )
+        # Push drawdown change via OpenClaw (non-blocking, non-fatal)
+        if _state.level != DrawdownLevel.NORMAL:
+            import asyncio
+            asyncio.create_task(
+                openclaw_client.push_drawdown_alert(_state.level.value, drawdown)
+            )
 
 
 def update_equity(current_equity_eur: Decimal) -> None:

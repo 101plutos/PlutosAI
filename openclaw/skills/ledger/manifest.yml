@@ -1,0 +1,41 @@
+name: ledger
+version: 1.0.0
+description: >
+  LEDGER — personal finance controller. Tax report, nightly reconciliation,
+  net worth snapshot, Sparerpauschbetrag tracker, and German tax event summary
+  (Abgeltungssteuer, Haltefrist, Verlustverrechnung).
+author: PlutosAI / Project Francesca
+category: finance
+tags: [tax, ledger, reconciliation, steuer, abgeltungssteuer, haltefrist, networth]
+
+runtime: python3
+entry: handler.py
+invoke: handle
+
+triggers:
+  - "ledger"
+  - "tax report"
+  - "steuerbericht"
+  - "reconcile"
+  - "abgleich"
+  - "haltefrist"
+  - "abgeltungssteuer"
+  - "sparerpauschbetrag"
+  - "net worth"
+  - "netto"
+
+parameters:
+  - name: action
+    description: "tax | reconcile | networth | sparerpauschbetrag"
+    type: string
+    required: false
+    default: tax
+
+env:
+  - PLUTOSAI_FINANCE_URL
+
+permissions:
+  - http.get
+  - http.post
+
+timeout: 30

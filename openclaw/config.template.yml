@@ -1,0 +1,78 @@
+# OpenClaw configuration additions for PlutosAI / Project Francesca
+#
+# Merge these sections into your OpenClaw config.yml
+# (usually at ~/.openclaw/config.yml or $OPENCLAW_CONFIG_DIR/config.yml)
+#
+# After adding, run: openclaw doctor  to verify
+
+# ─────────────────────────────────────────────────────────────────
+# Environment variables available to all skills
+# ─────────────────────────────────────────────────────────────────
+env:
+  # PlutosAI finance-service URL
+  # Local:   http://localhost:8008
+  # Docker:  http://plutos:8008  (if on same Docker network)
+  # Remote:  http://<tailscale-ip>:8008
+  PLUTOSAI_FINANCE_URL: "http://localhost:8008"
+
+# ─────────────────────────────────────────────────────────────────
+# Skills — install all PlutosAI skills as workspace skills
+# ─────────────────────────────────────────────────────────────────
+skills:
+  workspace:
+    - path: ~/PlutosAI/openclaw/skills/finance
+      name: finance
+    - path: ~/PlutosAI/openclaw/skills/oracle
+      name: oracle
+    - path: ~/PlutosAI/openclaw/skills/banker
+      name: banker
+    - path: ~/PlutosAI/openclaw/skills/ledger
+      name: ledger
+    - path: ~/PlutosAI/openclaw/skills/equity-research
+      name: equity-research
+    - path: ~/PlutosAI/openclaw/skills/prediction-coach
+      name: prediction-coach
+
+# ─────────────────────────────────────────────────────────────────
+# Lobster workflows
+# ─────────────────────────────────────────────────────────────────
+lobster:
+  workflows_dir: ~/PlutosAI/openclaw/workflows
+
+# ─────────────────────────────────────────────────────────────────
+# Scheduled jobs (cron) via OpenClaw scheduler
+# ─────────────────────────────────────────────────────────────────
+cron:
+  # Morning briefing — Mon–Fri at 06:30 CET (05:30 UTC)
+  - name: oracle-morning-brief
+    schedule: "30 5 * * 1-5"
+    run: lobster run oracle-morning-brief
+    session: main
+
+  # Weekly German BBBank briefing — Monday at 06:00 CET
+  - name: oracle-weekly-german
+    schedule: "0 5 * * 1"
+    run: lobster run oracle-morning-brief
+    session: main
+
+  # Nightly reconciliation — every day at 23:00 CET (22:00 UTC)
+  - name: ledger-nightly-reconcile
+    schedule: "0 22 * * *"
+    run: lobster run ledger-nightly-reconcile
+    session: main
+
+  # Finance daily digest — Mon–Fri at 08:00 CET (07:00 UTC)
+  - name: finance-daily-digest
+    schedule: "0 7 * * 1-5"
+    command: "finance status"
+    session: main
+
+# ─────────────────────────────────────────────────────────────────
+# Finance Division push notifications
+# The finance-service pushes P0 alerts and drawdown changes
+# directly to OpenClaw via WebSocket.
+#
+# The gateway URL is configured on the finance-service side:
+#   FIN_OPENCLAW_GATEWAY_URL=ws://127.0.0.1:18789
+# ─────────────────────────────────────────────────────────────────
+# No config needed here — OpenClaw gateway runs at the default port.

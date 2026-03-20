@@ -198,6 +198,9 @@ services:
       - FIN_DEFAULT_MODEL=${FIN_DEFAULT_MODEL:-gpt-4o}
       - FIN_MAX_SINGLE_POSITION_EUR=${FIN_MAX_SINGLE_POSITION_EUR:-5000}
       - FIN_MAX_DAILY_LOSS_EUR=${FIN_MAX_DAILY_LOSS_EUR:-500}
+      # OpenClaw gateway — set to ws://host.docker.internal:18789 if OpenClaw runs on host
+      - FIN_OPENCLAW_GATEWAY_URL=${OPENCLAW_GATEWAY_URL:-}
+      - FIN_OPENCLAW_DEFAULT_SESSION=${OPENCLAW_DEFAULT_SESSION:-main}
     depends_on:
       redis:
         condition: service_healthy

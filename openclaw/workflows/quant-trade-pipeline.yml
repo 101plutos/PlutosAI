@@ -1,0 +1,125 @@
+# Lobster Workflow: quant-trade-pipeline
+# QUANT → COMPLIANCE → Human Approval Gate → Execution Confirmation
+#
+# Usage (via OpenClaw): lobster run quant-trade-pipeline
+# Args:   SYMBOL DIRECTION SIZE_EUR EDGE ODDS MARKET RATIONALE
+#
+# This is the canonical trade lifecycle for Project Francesca.
+# COMPLIANCE always runs as step 2. Human approval is mandatory before
+# any real order. LEDGER records the outcome after execution.
+
+name: quant-trade-pipeline
+description: "Evaluate a trade: QUANT sizing → COMPLIANCE gate → human approval → outcome recording"
+version: 1.0.0
+
+env:
+  FINANCE_URL: "${PLUTOSAI_FINANCE_URL:-http://localhost:8008}"
+
+steps:
+  # ─────────────────────────────────────────────
+  # Step 1: QUANT — Kelly sizing + COMPLIANCE gate
+  # ─────────────────────────────────────────────
+  - id: quant_evaluate
+    name: "QUANT: Evaluate trade through COMPLIANCE"
+    run: |
+      curl -s -X POST "${FINANCE_URL}/quant/evaluate" \
+        -H "Content-Type: application/json" \
+        -d '{
+          "symbol": "${LOBSTER_ARG_SYMBOL:-BTC-USD}",
+          "direction": "${LOBSTER_ARG_DIRECTION:-long}",
+          "size_eur": ${LOBSTER_ARG_SIZE_EUR:-200},
+          "market": "${LOBSTER_ARG_MARKET:-binance}",
+          "rationale": "${LOBSTER_ARG_RATIONALE:-Manual evaluation}",
+          "edge_estimate": ${LOBSTER_ARG_EDGE:-0.55},
+          "odds": ${LOBSTER_ARG_ODDS:-1.0}
+        }'
+    timeout: 45
+
+  # ─────────────────────────────────────────────
+  # Step 2: Parse verdict — abort if BLOCK
+  # ─────────────────────────────────────────────
+  - id: check_verdict
+    name: "Check COMPLIANCE verdict"
+    run: |
+      VERDICT=$(echo '${{ steps.quant_evaluate.stdout }}' | python3 -c "
+      import sys, json
+      d = json.load(sys.stdin)
+      print(d['compliance_verdict'])
+      ")
+      echo "Verdict: $VERDICT"
+      if [ "$VERDICT" = "BLOCK" ]; then
+        echo "🚫 COMPLIANCE BLOCKED this trade:"
+        echo '${{ steps.quant_evaluate.stdout }}' | python3 -c "
+      import sys, json
+      d = json.load(sys.stdin)
+      print(d['message'])
+      "
+        exit 1
+      fi
+      echo "✅ COMPLIANCE PASS — proceeding to human approval"
+
+  # ─────────────────────────────────────────────
+  # Step 3: Show trade details to Flo
+  # ─────────────────────────────────────────────
+  - id: show_proposal
+    name: "Display trade proposal"
+    run: |
+      echo '${{ steps.quant_evaluate.stdout }}' | python3 -c "
+      import sys, json
+      d = json.load(sys.stdin)
+      print(f'''
+      ═══════════════════════════════
+      TRADE PROPOSAL — COMPLIANCE PASS
+      ═══════════════════════════════
+      Symbol:        {d[\"symbol\"]}
+      Direction:     {d[\"compliance_verdict\"]}
+      Kelly used:    {d.get(\"kelly_fraction_used\", \"N/A\")}
+      Final size:    €{d.get(\"final_size_eur\", \"N/A\")}
+      Drawdown:      {d[\"drawdown_level\"]}
+      Audit entry:   {d.get(\"audit_entry_id\", \"N/A\")}
+      ═══════════════════════════════
+      ⚠️  Human approval required before submitting order.
+      ''')
+      "
+
+  # ─────────────────────────────────────────────
+  # Step 4: HUMAN APPROVAL GATE (hard stop)
+  # ─────────────────────────────────────────────
+  - id: human_approval
+    name: "⛔ HUMAN APPROVAL REQUIRED"
+    type: approval
+    message: |
+      QUANT proposes the above trade. COMPLIANCE has passed it.
+      This is your final review before the order is recorded.
+
+      Approve to continue. Reject to cancel.
+
+      Note: PlutosAI does NOT auto-submit orders to any exchange.
+      You must manually place the order after approving here.
+    approve_label: "✅ Approved — I will place the order manually"
+    reject_label: "❌ Rejected — cancel this trade"
+
+  # ─────────────────────────────────────────────
+  # Step 5 (post-approval): Prompt for outcome
+  # ─────────────────────────────────────────────
+  - id: record_outcome
+    name: "Record trade outcome in LEDGER"
+    run: |
+      REQUEST_ID=$(echo '${{ steps.quant_evaluate.stdout }}' | python3 -c "
+      import sys, json; print(json.load(sys.stdin)['request_id'])
+      ")
+      echo "To record the trade outcome after execution, run:"
+      echo ""
+      echo "  lobster run record-trade-outcome PROPOSAL_ID=${REQUEST_ID} PNL_EUR=<your_pnl>"
+      echo ""
+      echo "This updates QUANT drawdown state and LEDGER net worth automatically."
+
+  - id: summary
+    name: "Pipeline complete"
+    run: |
+      echo "═══════════════════════════════"
+      echo "Trade pipeline complete."
+      echo "• Place order manually on exchange"
+      echo "• Record outcome via: lobster run record-trade-outcome"
+      echo "• COMPLIANCE audit entry saved to immutable log"
+      echo "═══════════════════════════════"

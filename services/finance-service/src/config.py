@@ -50,6 +50,12 @@ class Settings(BaseSettings):
     abgeltungssteuer_rate: float = 0.25      # 25% flat rate
     crypto_haltefrist_days: int = 365        # 1-year holding period for crypto tax exemption
 
+    # OpenClaw Gateway integration
+    # Set to ws://127.0.0.1:18789 when OpenClaw is running locally (same machine)
+    # Set to ws://<tailscale-hostname>:18789 when running on a remote plutos node
+    openclaw_gateway_url: str = ""          # Empty = push disabled (non-fatal)
+    openclaw_default_session: str = "main"  # OpenClaw session to push notifications to
+
     # Service
     host: str = "0.0.0.0"
     port: int = 8008
