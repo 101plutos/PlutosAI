@@ -25,6 +25,7 @@ _SERVICE_URLS = {
     "ai":         os.getenv("AI_SERVICE_URL", "http://localhost:8005"),
     "blockchain": os.getenv("BLOCKCHAIN_SERVICE_URL", "http://localhost:8006"),
     "simulation": os.getenv("SIMULATION_SERVICE_URL", "http://localhost:8007"),
+    "finance":    os.getenv("FINANCE_SERVICE_URL", "http://localhost:8008"),
 }
 
 
@@ -84,3 +85,20 @@ async def simulation_proxy(request: Request, path: str = "") -> Response:
     """Proxy all /simulate/* requests to the Simulation Service."""
     route_path = f"/simulate/{path}" if path else "/simulate"
     return await _proxy(request, "simulation", route_path)
+
+
+# ---------------------------------------------------------------------------
+# Finance Division routes — /finance/* + /compliance/* + /quant/* etc.
+# ---------------------------------------------------------------------------
+_FINANCE_PREFIXES = (
+    "/finance", "/compliance", "/quant", "/oracle", "/banker", "/ledger", "/skills"
+)
+
+
+@app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def finance_proxy(request: Request, path: str) -> Response:
+    """Proxy Finance Division agent and skill routes to finance-service:8008."""
+    full_path = f"/{path}"
+    if any(full_path.startswith(prefix) for prefix in _FINANCE_PREFIXES):
+        return await _proxy(request, "finance", full_path)
+    raise HTTPException(status_code=404, detail=f"Route '{full_path}' not found")
