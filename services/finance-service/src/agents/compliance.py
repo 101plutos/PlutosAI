@@ -22,6 +22,7 @@ from decimal import Decimal
 from zoneinfo import ZoneInfo
 
 from ..config import settings
+from .. import openclaw_client
 from ..models import (
     ComplianceAuditEntry,
     ComplianceResult,
@@ -149,6 +150,13 @@ async def check_trade(
         proposal.size_eur,
         rationale,
     )
+
+    # Push BLOCK verdicts to Flo via OpenClaw (non-blocking, non-fatal)
+    if verdict == ComplianceVerdict.BLOCK:
+        import asyncio
+        asyncio.create_task(
+            openclaw_client.push_compliance_block(proposal.symbol, violations)
+        )
 
     return ComplianceResult(
         verdict=verdict,

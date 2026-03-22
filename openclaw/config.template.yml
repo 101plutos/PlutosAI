@@ -15,6 +15,9 @@ env:
   # Remote:  http://<tailscale-ip>:8008
   PLUTOSAI_FINANCE_URL: "http://localhost:8008"
 
+  # PlutosAI simulation-service URL (MiroFish engine)
+  PLUTOSAI_SIMULATION_URL: "http://localhost:8007"
+
 # ─────────────────────────────────────────────────────────────────
 # Skills — install all PlutosAI skills as workspace skills
 # ─────────────────────────────────────────────────────────────────
@@ -32,6 +35,8 @@ skills:
       name: equity-research
     - path: ~/PlutosAI/openclaw/skills/prediction-coach
       name: prediction-coach
+    - path: ~/PlutosAI/openclaw/skills/simulate
+      name: simulate
 
 # ─────────────────────────────────────────────────────────────────
 # Lobster workflows

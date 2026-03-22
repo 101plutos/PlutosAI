@@ -23,6 +23,7 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from .agents import compliance as compliance_agent
 from .agents import quant as quant_agent
 from .agents import oracle as oracle_agent
+from . import marketpulse
 from .agents import banker as banker_agent
 from .agents import ledger as ledger_agent
 from .skills import equity_research as skill_equity
@@ -103,7 +104,22 @@ async def lifespan(app: FastAPI):
         "Finance service LLM ready → %s (model: %s)",
         settings.openai_base_url, settings.default_model,
     )
+
+    # MARKETPULSE — start live price feed as background task
+    import asyncio
+    marketpulse_task = asyncio.create_task(
+        marketpulse.run_forever(base_url=f"http://localhost:{settings.port}")
+    )
+    logger.info("MARKETPULSE started — polling every %ds", marketpulse.POLL_INTERVAL)
+
     yield
+
+    # Shutdown MARKETPULSE cleanly
+    marketpulse_task.cancel()
+    try:
+        await marketpulse_task
+    except asyncio.CancelledError:
+        pass
     if _redis:
         await _redis.aclose()
 

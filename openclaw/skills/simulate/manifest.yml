@@ -1,0 +1,50 @@
+name: simulate
+version: 1.0.0
+description: >
+  MiroFish multi-perspective prediction engine. Four AI agents (BULL, BEAR,
+  ANALYST, MACRO) debate a scenario across N rounds, then REPORT synthesises
+  a probability-weighted consensus. Use for market predictions, event
+  forecasting, or any "what happens if" question.
+author: PlutosAI / Project Francesca
+category: finance
+tags: [prediction, simulation, bull, bear, forecast, probability, scenario]
+
+runtime: python3
+entry: handler.py
+invoke: handle
+
+triggers:
+  - "simulate"
+  - "predict"
+  - "forecast"
+  - "what happens if"
+  - "bull case"
+  - "bear case"
+  - "scenario analysis"
+  - "vorhersage"
+  - "was passiert wenn"
+
+parameters:
+  - name: question
+    description: The market question or scenario to simulate
+    type: string
+    required: true
+  - name: rounds
+    description: Number of debate rounds (1-5, default 3)
+    type: integer
+    required: false
+    default: 3
+  - name: context
+    description: Background information, recent data, or constraints
+    type: string
+    required: false
+
+env:
+  - PLUTOSAI_SIMULATION_URL   # simulation-service base URL, default http://localhost:8007
+
+permissions:
+  - http.get
+  - http.post
+
+# Simulations can take several minutes
+timeout: 600

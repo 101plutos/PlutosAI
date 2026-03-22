@@ -1,847 +1,243 @@
-<<<<<<< Current (Your changes)
-# PlutosAI — Enterprise Family Office Platform
+# PlutosAI — AI-Native Family Office Platform
 
-A production-ready, AI-native family office and asset management platform built with microservices architecture. Designed for regulatory compliance, scalability, and AI-driven insights.
+A production-ready, AI-native family office and asset management platform.
+The interface layer is **OpenClaw** — Flo talks to the Finance Division through
+any messaging app (Telegram, WhatsApp, Signal, Discord) via OpenClaw's
+multi-channel gateway.
 
-## 🏗️ Architecture Overview
+---
 
-This platform follows a **microservices architecture** with domain-driven design, event-driven communication, and comprehensive observability.
+## Architecture
 
-### Core Services
+```
+Your phone (Telegram / WhatsApp / Signal / Discord)
+          ↕
+  OpenClaw Gateway  ws://127.0.0.1:18789
+          ↕
+  PlutosAI Skills   openclaw/skills/
+          ↕
+  Finance Division  finance-service:8008
+  ├── COMPLIANCE    Hard gate — 30s timeout, immutable audit log
+  ├── QUANT         Fractional Kelly, drawdown protocol
+  ├── ORACLE        DAX/BTC/EUR monitoring, P0 alerts, briefings
+  ├── BANKER        BBBank products, MiFID II, Praxisnachweis
+  └── LEDGER        German tax, reconciliation, net worth
 
-- **🎯 Client Service** (`/clients`) - Client onboarding, KYC, profile management
-- **📊 Investment Service** (`/portfolios`, `/transactions`) - Portfolio management, trading, valuations
-- **⚖️ Compliance Service** (`/compliance`) - AML/KYC checks, monitoring, audit trails
-- **📈 Reporting Service** (`/reports`) - Client reports, analytics, dashboards
-- **🤖 AI Service** (`/insights`) - ML models, recommendations, risk analysis
-- **⛓️ Blockchain Service** (`/wallets`, `/transactions`, `/nfts`) - Digital asset management, DeFi, NFTs
-- **🚪 Gateway Service** - API gateway, authentication, rate limiting
+  Supporting Services
+  ├── simulation-service:8007   MiroFish prediction engine (4-agent debate)
+  ├── ai-service:8005           OpenAI integration, quantized models
+  ├── blockchain-service:8006   Wallets, DeFi, NFTs
+  ├── client-service:8001       KYC/onboarding
+  └── gateway-service:8000      REST reverse proxy
+```
 
 ### Technology Stack
 
-**Backend:**
-- **Language:** Python 3.11
-- **Framework:** FastAPI (async, high-performance)
-- **Database:** PostgreSQL (async SQLAlchemy)
-- **Message Queue:** NATS (event-driven architecture)
-- **Cache:** Redis
-- **Authentication:** JWT with role-based access control
-
-**Infrastructure:**
-- **Containerization:** Docker
-- **Orchestration:** Kubernetes
-- **CI/CD:** GitHub Actions
-- **Monitoring:** Prometheus + Grafana
-- **Security:** Container scanning, secrets management
-
-**Development:**
-- **Linting:** Ruff
-- **Type Checking:** MyPy
-- **Testing:** Pytest with async support
-- **API Docs:** Auto-generated OpenAPI/Swagger
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- Python 3.11+
-- Docker & Docker Compose
-- kubectl (for Kubernetes deployment)
-
-### Local Development
-
-1. **Clone and setup:**
-   ```bash
-   git clone https://github.com/your-org/plutosai.git
-   cd plutosai
-   python3.11 -m venv .venv
-   source .venv/bin/activate
-   ```
-
-2. **Start infrastructure:**
-   ```bash
-   cd infrastructure/docker
-   docker-compose up -d
-   ```
-
-3. **Install dependencies and run client service:**
-   ```bash
-   cd services/client-service
-   pip install -e '.[dev]'
-   uvicorn src.api:app --reload --host 0.0.0.0 --port 8001
-   ```
-
-4. **Access services:**
-   - **API Gateway:** http://localhost:8000
-   - **Client Service:** http://localhost:8001
-   - **Grafana:** http://localhost:3000 (admin/admin)
-   - **Prometheus:** http://localhost:9090
-
-### API Examples
-
-**Create a client:**
-```bash
-curl -X POST "http://localhost:8001/clients" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{
-    "type": "individual",
-    "first_name": "John",
-    "last_name": "Doe",
-    "email": "john.doe@example.com"
-  }'
-```
-
-**Get client details:**
-```bash
-curl -X GET "http://localhost:8001/clients/{client_id}" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-## 📁 Project Structure
-
-```
-plutosai/
-├── services/                    # Microservices
-│   ├── client-service/         # Client management
-│   ├── investment-ops/         # Portfolio & trading
-│   ├── compliance-service/     # Compliance & monitoring
-│   ├── reporting-service/      # Reports & analytics
-│   ├── ai-service/            # AI/ML features
-│   ├── blockchain-service/    # Digital asset management
-│   └── gateway-service/       # API gateway
-├── shared/                     # Shared libraries
-│   ├── domain/                # Domain models
-│   │   ├── client.py         # Client domain models
-│   │   ├── investment.py     # Investment domain models
-│   │   ├── compliance.py     # Compliance domain models
-│   │   └── blockchain.py     # Blockchain domain models
-│   ├── auth/                  # Authentication utilities
-│   ├── events/                # Event definitions
-│   └── utils/                 # Common utilities
-├── infrastructure/            # Infrastructure as Code
-│   ├── docker/               # Docker Compose & configs
-│   └── k8s/                  # Kubernetes manifests
-├── monitoring/                # Observability
-│   ├── prometheus/           # Metrics collection
-│   └── grafana/             # Dashboards
-├── tests/                     # Test suites
-│   ├── integration/          # Integration tests
-│   └── e2e/                  # End-to-end tests
-├── docs/                      # Documentation
-└── .github/workflows/         # CI/CD pipelines
-```
-
-## 🔐 Security & Compliance
-
-### Authentication & Authorization
-- JWT-based authentication with refresh tokens
-- Role-based access control (RBAC)
-- Multi-factor authentication support
-- Session management with Redis
-
-### Regulatory Compliance
-- **AML/KYC:** Integrated screening and monitoring
-- **Audit Trails:** Comprehensive logging of all actions
-- **Data Privacy:** GDPR/CCPA compliant data handling
-- **Risk Management:** Real-time risk scoring and alerts
-
-### Security Features
-- **Container Security:** Trivy vulnerability scanning
-- **Secrets Management:** Encrypted secrets in Kubernetes
-- **Network Security:** Service mesh with mTLS
-- **API Security:** Rate limiting, CORS, input validation
-
-## 📊 Monitoring & Observability
-
-### Metrics
-- **Application Metrics:** Request latency, error rates, throughput
-- **Business Metrics:** Client onboarding funnel, portfolio performance
-- **System Metrics:** CPU, memory, disk usage, network I/O
-
-### Logging
-- Structured logging with correlation IDs
-- Centralized log aggregation
-- Log levels: DEBUG, INFO, WARN, ERROR
-- Retention policies and archival
-
-### Alerting
-- Real-time alerts for system issues
-- Compliance violation notifications
-- Performance degradation alerts
-- Automated incident response
-
-## 🚀 Deployment
-
-### Environments
-- **Development:** Local Docker Compose
-- **Staging:** Kubernetes cluster for testing
-- **Production:** Highly available Kubernetes cluster
-
-### CI/CD Pipeline
-1. **Code Quality:** Lint, type check, security scan
-2. **Build:** Docker image creation and registry push
-3. **Test:** Unit, integration, and E2E tests
-4. **Deploy:** Automated deployment with rollbacks
-5. **Monitor:** Health checks and alerting setup
-
-## 🤖 AI/ML Features
-
-### Portfolio Analysis
-- **Risk Assessment:** Monte Carlo simulations, VaR calculations
-- **Performance Attribution:** Factor analysis and benchmarking
-- **Rebalancing Recommendations:** Tax-efficient portfolio optimization
-
-### Client Insights
-- **Personalized Recommendations:** ML-driven investment suggestions
-- **Behavioral Analysis:** Client interaction patterns and preferences
-- **Market Intelligence:** Real-time news and sentiment analysis
-
-### Compliance Automation
-- **Transaction Monitoring:** ML-based anomaly detection
-- **KYC Enhancement:** Automated document processing and verification
-- **Risk Scoring:** Predictive models for client risk assessment
-
-## ⛓️ Blockchain Integration
-
-### Digital Asset Management
-- **Multi-Blockchain Support:** Ethereum, Polygon, BSC, Arbitrum, Bitcoin
-- **Wallet Management:** Hot, cold, multi-signature, and hardware wallets
-- **Asset Types:** Cryptocurrencies, tokens, NFTs, security tokens
-- **DeFi Integration:** Lending, staking, liquidity provision
-- **Cross-Chain Bridges:** Seamless asset transfers between networks
-
-### Key Features
-- **Secure Custody:** Institutional-grade wallet security
-- **Transaction Monitoring:** Real-time blockchain transaction tracking
-- **NFT Portfolio:** Complete NFT management and valuation
-- **Yield Optimization:** Automated DeFi yield farming
-- **Compliance Integration:** Blockchain transaction compliance reporting
-
-### Example Use Cases
-```bash
-# Create a multi-signature Ethereum wallet
-curl -X POST "http://localhost:8006/wallets" \
-  -H "Authorization: Bearer TOKEN" \
-  -d '{
-    "client_id": "client-123",
-    "name": "ETH Multi-Sig",
-    "wallet_type": "multisig_wallet",
-    "blockchain": "ethereum",
-    "required_signatures": 2,
-    "total_signers": 3
-  }'
-
-# Register an NFT in the portfolio
-curl -X POST "http://localhost:8006/nfts" \
-  -H "Authorization: Bearer TOKEN" \
-  -d '{
-    "wallet_id": "wallet-123",
-    "contract_address": "0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D",
-    "token_id": "1234",
-    "token_standard": "ERC-721"
-  }'
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes and add tests
-4. Run the full test suite: `make test-all`
-5. Commit your changes: `git commit -m 'Add amazing feature'`
-6. Push to the branch: `git push origin feature/amazing-feature`
-7. Open a Pull Request
-
-### Development Setup
-
-```bash
-# Install development dependencies
-pip install -e '.[dev]'
-
-# Run tests
-pytest
-
-# Run linter
-ruff check .
-
-# Run type checker
-mypy shared/
-
-# Start local services
-docker-compose up -d
-```
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙋 Support
-
-- **Issues:** [GitHub Issues](https://github.com/your-org/plutosai/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/your-org/plutosai/discussions)
-- **Documentation:** [Wiki](https://github.com/your-org/plutosai/wiki)
-
-## 🎯 Roadmap
-
-### Phase 1 (Current)
-- [x] Microservices architecture
-- [x] Domain-driven design
-- [x] Authentication & authorization
-- [x] Basic CRUD operations
-- [x] Infrastructure as code
-
-### Phase 2 (Next)
-- [ ] AI/ML model integration
-- [ ] Advanced compliance features
-- [ ] Multi-tenant architecture
-- [ ] Real-time notifications
-- [ ] Mobile app API
-
-### Phase 3 (Future)
-- [ ] Blockchain integration
-- [ ] Advanced analytics
-- [ ] Regulatory reporting automation
-- [ ] Global expansion features
+| Layer | Tech |
+|-------|------|
+| Language | Python 3.11+ |
+| Framework | FastAPI (async) |
+| Database | PostgreSQL |
+| Cache | Redis |
+| Message Queue | NATS |
+| LLM Client | OpenAI-compatible (swap for Ollama/local) |
+| Interface | OpenClaw (multi-channel messaging gateway) |
+| Monitoring | Prometheus + Grafana |
+| Container | Docker + Kubernetes |
 
 ---
 
-**Built with ❤️ for the future of wealth management.**
-=======
-# PlutosAI
+## Finance Division — Project Francesca
 
-A comprehensive AI-powered platform for intelligent data processing and analysis.
+The core value-delivery engine. Five specialised agents, three on-demand skills,
+and a live market data feed (MARKETPULSE).
 
-## Table of Contents
+### Agents
 
-- [Overview](#overview)
-- [Installation](#installation)
-- [Quick Start](#quick-start)
-- [API Documentation](#api-documentation)
-- [Components](#components)
-- [Examples](#examples)
-- [Contributing](#contributing)
-- [License](#license)
+| Agent | Endpoint prefix | Role |
+|-------|----------------|------|
+| **COMPLIANCE** | `/compliance/*` | Hard gate before every trade. 30s timeout. Blackout window. Immutable audit log. |
+| **QUANT** | `/quant/*` | Trade evaluation. Fractional Kelly (1/3 of f*). Drawdown protocol. |
+| **ORACLE** | `/oracle/*` | 24/7 market intelligence. P0 alerts ≤5 min. Weekly German briefings. |
+| **BANKER** | `/banker/*` | BBBank products. MiFID II suitability. Praxisnachweis role-play. |
+| **LEDGER** | `/ledger/*` | Transaction categorisation. German tax. Nightly reconciliation. |
 
-## Overview
+### Hard Rules (non-negotiable, hard-coded)
 
-PlutosAI is a modern, scalable platform that provides intelligent data processing capabilities through a comprehensive set of APIs and components. The platform is designed to handle various AI tasks including data analysis, natural language processing, and machine learning operations.
+```
+Blackout:        Friday 13:45–16:00 CET — absolute block, zero exceptions
+Drawdown 10–20%: WARNING — halve all position sizes
+Drawdown 20–30%: HALT_24H — stop all trading for 24 hours
+Drawdown >30%:   HALT_72H — stop 72 hours + AEGIS incident review
+Dead-man switch: COMPLIANCE unresponsive > 30s → auto HALT_24H
+Max Kelly:       33% fractional Kelly (1/3 of full Kelly)
+Auto-execute:    NEVER — human approval mandatory before any real order
+```
 
-### Key Features
+### On-Demand Skills
 
-- **RESTful API**: Complete REST API for all operations
-- **Real-time Processing**: Stream-based data processing capabilities
-- **Scalable Architecture**: Built for high-performance and scalability
-- **Comprehensive SDK**: Multiple language support (JavaScript, Python, Go)
-- **Web Components**: Reusable UI components for rapid development
+| Skill | Endpoint | |
+|-------|----------|-|
+| equity-research | `POST /skills/equity-research` | 8-section Goldman/JPMorgan-style report |
+| prediction-market-coach | `POST /skills/prediction-market-coach` | A–F trade grade, Kelly audit, bias detection |
+| financial-dispatch | `POST /skills/financial-dispatch` | 800-word FT/Reuters briefing |
 
-## Installation
+### MARKETPULSE (Live Price Feed)
 
-### Prerequisites
+Background task inside finance-service. Polls CoinGecko (crypto) and Yahoo Finance
+(equities/FX) every 60 seconds, pushes snapshots to ORACLE. Evaluates moves — fires
+P0 alerts automatically when threshold breached.
 
-- Node.js 18+ (for JavaScript/TypeScript usage)
-- Python 3.8+ (for Python SDK)
-- Go 1.19+ (for Go SDK)
+---
 
-### Quick Setup
+## OpenClaw Integration
+
+Talk to PlutosAI through any messaging app. Full details: [`openclaw/README.md`](openclaw/README.md).
+
+### Skills
+
+| Skill | Trigger keywords | What it does |
+|-------|-----------------|-------------|
+| `finance` | "finance status", "net worth", "drawdown" | Full Finance Division dashboard |
+| `oracle` | "morning brief", "DAX", "p0 alert", "was läuft" | Market briefings + alerts |
+| `banker` | "bbbank", "VL ETF", "mifid", "praxisnachweis" | BBBank products + MiFID II |
+| `ledger` | "tax report", "sparerpauschbetrag", "haltefrist" | German tax + reconciliation |
+| `equity-research` | "equity research AAPL", "SAP.DE report" | 8-section institutional report |
+| `prediction-coach` | "grade trade", "kelly check", "trade review" | A–F grade + bias detection |
+| `simulate` | "simulate BTC", "predict ETH next month" | MiroFish 4-agent prediction |
+
+### Scheduled Workflows
+
+| Workflow | Cron (UTC) | |
+|----------|------------|-|
+| `oracle-morning-brief` | `30 5 * * 1-5` | Mon–Fri 06:30 CET morning briefing |
+| `ledger-nightly-reconcile` | `0 22 * * *` | Daily 23:00 CET reconciliation + QUANT sync |
+
+### Push Notifications
+
+ORACLE pushes P0 alerts within 5 minutes of a material move. QUANT pushes drawdown
+level changes. Delivered directly to your Telegram/WhatsApp/Signal via OpenClaw.
 
 ```bash
-# Clone the repository
-git clone https://github.com/your-org/plutos-ai.git
-cd plutos-ai
-
-# Install dependencies
-npm install
-
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your configuration
-
-# Start the development server
-npm run dev
+FIN_OPENCLAW_GATEWAY_URL=ws://127.0.0.1:18789
+FIN_OPENCLAW_DEFAULT_SESSION=main
 ```
+
+---
 
 ## Quick Start
 
-### Using the JavaScript SDK
+### Prerequisites
 
-```javascript
-import { PlutosAI } from '@plutos-ai/sdk';
+- Python 3.11+, Docker & Docker Compose
+- Node.js 22+ (for OpenClaw)
 
-const client = new PlutosAI({
-  apiKey: 'your-api-key',
-  environment: 'production'
-});
-
-// Process data
-const result = await client.processData({
-  input: 'Your input data',
-  model: 'gpt-4',
-  options: {
-    temperature: 0.7,
-    maxTokens: 1000
-  }
-});
-
-console.log(result.output);
-```
-
-### Using the Python SDK
-
-```python
-from plutos_ai import PlutosAI
-
-client = PlutosAI(
-    api_key="your-api-key",
-    environment="production"
-)
-
-# Process data
-result = client.process_data(
-    input="Your input data",
-    model="gpt-4",
-    options={
-        "temperature": 0.7,
-        "max_tokens": 1000
-    }
-)
-
-print(result.output)
-```
-
-## API Documentation
-
-### Authentication
-
-All API requests require authentication using an API key. Include your API key in the request headers:
+### 1. Start infrastructure
 
 ```bash
-Authorization: Bearer YOUR_API_KEY
+cd infrastructure/docker
+cp .env.example .env    # add OPENAI_API_KEY
+docker-compose up -d
 ```
 
-### Base URL
-
-- **Production**: `https://api.plutos-ai.com/v1`
-- **Staging**: `https://staging-api.plutos-ai.com/v1`
-- **Development**: `http://localhost:3000/v1`
-
-### Core Endpoints
-
-#### Data Processing
-
-##### POST /process
-
-Process data using AI models.
-
-**Request Body:**
-```json
-{
-  "input": "string",
-  "model": "string",
-  "options": {
-    "temperature": "number",
-    "maxTokens": "number",
-    "topP": "number"
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "id": "string",
-  "output": "string",
-  "model": "string",
-  "usage": {
-    "promptTokens": "number",
-    "completionTokens": "number",
-    "totalTokens": "number"
-  },
-  "createdAt": "string"
-}
-```
-
-**Example:**
-```bash
-curl -X POST https://api.plutos-ai.com/v1/process \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "input": "Analyze this text for sentiment",
-    "model": "gpt-4",
-    "options": {
-      "temperature": 0.7,
-      "maxTokens": 1000
-    }
-  }'
-```
-
-#### Batch Processing
-
-##### POST /batch
-
-Process multiple inputs in a single request.
-
-**Request Body:**
-```json
-{
-  "inputs": ["string"],
-  "model": "string",
-  "options": {
-    "temperature": "number",
-    "maxTokens": "number"
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "id": "string",
-  "results": [
-    {
-      "input": "string",
-      "output": "string",
-      "usage": {
-        "promptTokens": "number",
-        "completionTokens": "number",
-        "totalTokens": "number"
-      }
-    }
-  ],
-  "totalUsage": {
-    "promptTokens": "number",
-    "completionTokens": "number",
-    "totalTokens": "number"
-  }
-}
-```
-
-#### Stream Processing
-
-##### POST /stream
-
-Stream data processing results in real-time.
-
-**Request Body:**
-```json
-{
-  "input": "string",
-  "model": "string",
-  "options": {
-    "temperature": "number",
-    "maxTokens": "number"
-  }
-}
-```
-
-**Response (Server-Sent Events):**
-```
-data: {"chunk": "partial", "output": "Hello"}
-
-data: {"chunk": "partial", "output": " world"}
-
-data: {"chunk": "final", "output": "Hello world", "usage": {...}}
-```
-
-### Error Handling
-
-All API endpoints return standard HTTP status codes:
-
-- `200` - Success
-- `400` - Bad Request
-- `401` - Unauthorized
-- `403` - Forbidden
-- `404` - Not Found
-- `429` - Rate Limited
-- `500` - Internal Server Error
-
-Error responses include detailed information:
-
-```json
-{
-  "error": {
-    "code": "string",
-    "message": "string",
-    "details": "object"
-  }
-}
-```
-
-## Components
-
-### Web Components
-
-PlutosAI provides a set of reusable web components for building AI-powered interfaces.
-
-#### PlutosAIProcessor
-
-A component for processing data with AI models.
-
-```html
-<plutos-ai-processor
-  api-key="your-api-key"
-  model="gpt-4"
-  placeholder="Enter your text here..."
-  @result="handleResult"
-  @error="handleError">
-</plutos-ai-processor>
-```
-
-**Properties:**
-- `api-key` (string): Your PlutosAI API key
-- `model` (string): AI model to use
-- `placeholder` (string): Input placeholder text
-- `temperature` (number): Model temperature (0-1)
-- `max-tokens` (number): Maximum tokens to generate
-
-**Events:**
-- `result`: Fired when processing completes
-- `error`: Fired when an error occurs
-- `loading`: Fired when processing starts
-
-#### PlutosAIStream
-
-A component for real-time streaming AI responses.
-
-```html
-<plutos-ai-stream
-  api-key="your-api-key"
-  model="gpt-4"
-  @chunk="handleChunk"
-  @complete="handleComplete">
-</plutos-ai-stream>
-```
-
-**Properties:**
-- `api-key` (string): Your PlutosAI API key
-- `model` (string): AI model to use
-- `auto-start` (boolean): Start streaming automatically
-
-**Events:**
-- `chunk`: Fired for each stream chunk
-- `complete`: Fired when streaming completes
-- `error`: Fired when an error occurs
-
-### React Components
-
-#### usePlutosAI Hook
-
-A React hook for integrating PlutosAI functionality.
-
-```jsx
-import { usePlutosAI } from '@plutos-ai/react';
-
-function MyComponent() {
-  const { processData, isLoading, error, result } = usePlutosAI({
-    apiKey: 'your-api-key',
-    model: 'gpt-4'
-  });
-
-  const handleSubmit = async (input) => {
-    await processData(input);
-  };
-
-  return (
-    <div>
-      {isLoading && <div>Processing...</div>}
-      {error && <div>Error: {error.message}</div>}
-      {result && <div>Result: {result.output}</div>}
-    </div>
-  );
-}
-```
-
-#### PlutosAIProvider
-
-A React context provider for PlutosAI configuration.
-
-```jsx
-import { PlutosAIProvider } from '@plutos-ai/react';
-
-function App() {
-  return (
-    <PlutosAIProvider
-      apiKey="your-api-key"
-      environment="production"
-    >
-      <MyComponent />
-    </PlutosAIProvider>
-  );
-}
-```
-
-## Examples
-
-### Basic Text Processing
-
-```javascript
-import { PlutosAI } from '@plutos-ai/sdk';
-
-const client = new PlutosAI({ apiKey: 'your-api-key' });
-
-// Simple text processing
-const result = await client.processData({
-  input: 'What is the capital of France?',
-  model: 'gpt-4'
-});
-
-console.log(result.output); // "The capital of France is Paris."
-```
-
-### Sentiment Analysis
-
-```javascript
-const sentimentResult = await client.processData({
-  input: 'I love this product! It works perfectly.',
-  model: 'gpt-4',
-  options: {
-    systemPrompt: 'Analyze the sentiment of the following text. Respond with only: positive, negative, or neutral.',
-    temperature: 0.1
-  }
-});
-
-console.log(sentimentResult.output); // "positive"
-```
-
-### Batch Processing
-
-```javascript
-const batchResult = await client.batchProcess({
-  inputs: [
-    'Hello, how are you?',
-    'What is the weather like?',
-    'Tell me a joke'
-  ],
-  model: 'gpt-4'
-});
-
-batchResult.results.forEach((result, index) => {
-  console.log(`Input ${index + 1}:`, result.output);
-});
-```
-
-### Streaming Responses
-
-```javascript
-const stream = await client.streamProcess({
-  input: 'Write a short story about a robot.',
-  model: 'gpt-4'
-});
-
-for await (const chunk of stream) {
-  if (chunk.chunk === 'partial') {
-    process.stdout.write(chunk.output);
-  } else if (chunk.chunk === 'final') {
-    console.log('\nComplete!');
-  }
-}
-```
-
-### Web Component Integration
-
-```html
-<!DOCTYPE html>
-<html>
-<head>
-  <script src="https://unpkg.com/@plutos-ai/components"></script>
-</head>
-<body>
-  <plutos-ai-processor
-    api-key="your-api-key"
-    model="gpt-4"
-    placeholder="Ask me anything..."
-    @result="handleResult">
-  </plutos-ai-processor>
-
-  <script>
-    function handleResult(event) {
-      console.log('Result:', event.detail);
-    }
-  </script>
-</body>
-</html>
-```
-
-### React Integration
-
-```jsx
-import React, { useState } from 'react';
-import { usePlutosAI } from '@plutos-ai/react';
-
-function ChatInterface() {
-  const [messages, setMessages] = useState([]);
-  const { processData, isLoading } = usePlutosAI({
-    apiKey: 'your-api-key',
-    model: 'gpt-4'
-  });
-
-  const sendMessage = async (text) => {
-    const userMessage = { role: 'user', content: text };
-    setMessages(prev => [...prev, userMessage]);
-
-    const result = await processData(text);
-    const aiMessage = { role: 'assistant', content: result.output };
-    setMessages(prev => [...prev, aiMessage]);
-  };
-
-  return (
-    <div>
-      {messages.map((msg, index) => (
-        <div key={index} className={msg.role}>
-          {msg.content}
-        </div>
-      ))}
-      {isLoading && <div>AI is thinking...</div>}
-    </div>
-  );
-}
-```
-
-## Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-### Development Setup
+### 2. Install OpenClaw
 
 ```bash
-# Fork and clone the repository
-git clone https://github.com/your-username/plutos-ai.git
-cd plutos-ai
-
-# Install dependencies
-npm install
-
-# Run tests
-npm test
-
-# Start development server
-npm run dev
-
-# Build for production
-npm run build
+npm install -g openclaw
+openclaw onboard
+# Merge openclaw/config.template.yml into ~/.openclaw/config.yml
 ```
 
-### Code Style
+### 3. Register PlutosAI skills
 
-- Follow the existing code style
-- Write tests for new features
-- Update documentation for API changes
-- Use conventional commits
+```bash
+for skill in finance oracle banker ledger equity-research prediction-coach simulate; do
+  openclaw skills add workspace ~/PlutosAI/openclaw/skills/$skill
+done
+```
 
-## License
+### 4. Services
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support
-
-- **Documentation**: [docs.plutos-ai.com](https://docs.plutos-ai.com)
-- **API Reference**: [api.plutos-ai.com](https://api.plutos-ai.com)
-- **Issues**: [GitHub Issues](https://github.com/your-org/plutos-ai/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-org/plutos-ai/discussions)
-- **Email**: support@plutos-ai.com
+| Service | URL |
+|---------|-----|
+| API Gateway | http://localhost:8000 |
+| Finance Division | http://localhost:8008/docs |
+| Simulation Engine | http://localhost:8007/docs |
+| Grafana | http://localhost:3000 (admin/admin) |
+| Prometheus | http://localhost:9090 |
 
 ---
 
-**PlutosAI** - Intelligent data processing for the modern web.
->>>>>>> Incoming (Background Agent changes)
+## Project Structure
+
+```
+PlutosAI/
+├── openclaw/                    # OpenClaw interface layer
+│   ├── skills/                  # One skill package per agent
+│   │   ├── finance/             # Finance Division dashboard
+│   │   ├── oracle/              # Market briefings + P0 alerts
+│   │   ├── banker/              # BBBank advisory + MiFID II
+│   │   ├── ledger/              # German tax + reconciliation
+│   │   ├── equity-research/     # 8-section institutional reports
+│   │   ├── prediction-coach/    # Trade grading + bias detection
+│   │   └── simulate/            # MiroFish prediction engine
+│   ├── workflows/               # Lobster multi-step workflows
+│   │   ├── quant-trade-pipeline.yml    # QUANT→COMPLIANCE→approval
+│   │   ├── oracle-morning-brief.yml    # Daily briefing delivery
+│   │   └── ledger-nightly-reconcile.yml
+│   └── config.template.yml      # Merge into ~/.openclaw/config.yml
+├── services/
+│   ├── finance-service/         # Project Francesca (port 8008)
+│   │   ├── src/agents/          # 5 agents
+│   │   ├── src/skills/          # 3 on-demand skills
+│   │   ├── src/marketpulse.py   # MARKETPULSE live feed
+│   │   └── src/openclaw_client.py  # WebSocket push to OpenClaw
+│   ├── simulation-service/      # MiroFish (port 8007)
+│   ├── ai-service/              # OpenAI integration (port 8005)
+│   ├── blockchain-service/      # Wallets, DeFi, NFTs (port 8006)
+│   ├── client-service/          # KYC/onboarding (port 8001)
+│   └── gateway-service/         # REST proxy (port 8000)
+├── shared/                      # Domain models, auth, events
+├── infrastructure/              # Docker Compose, Kubernetes
+├── templates/                   # Regulatory policies, SOPs
+└── docs/                        # Architecture, compliance, security
+```
+
+---
+
+## Key Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `FIN_OPENAI_API_KEY` | — | LLM API key (also `SIM_`, `AI_` prefixes) |
+| `FIN_OPENAI_BASE_URL` | OpenAI | `http://localhost:11434/v1` for Ollama |
+| `FIN_DEFAULT_MODEL` | `gpt-4o` | Default model |
+| `FIN_MAX_SINGLE_POSITION_EUR` | `5000` | COMPLIANCE position limit |
+| `FIN_MAX_DAILY_LOSS_EUR` | `500` | COMPLIANCE daily loss limit |
+| `FIN_OPENCLAW_GATEWAY_URL` | `""` | OpenClaw WebSocket (push disabled if empty) |
+| `OPENCLAW_GATEWAY_URL` | `""` | For docker-compose passthrough |
+
+---
+
+## Roadmap
+
+### Phase 1 ✅
+- Finance Division (5 agents + 3 skills + MARKETPULSE)
+- OpenClaw integration (7 skills + 3 workflows + WebSocket push)
+- MiroFish simulation engine
+- Blockchain/DeFi service
+
+### Phase 2 (In Progress)
+- Exchange API integration (Binance, Kraken)
+- Polymarket/Kalshi prediction market connectivity
+- BBBank Open Banking / PSD2 sync
+- LEDGER automated ELSTER tax export
+
+### Phase 3 (Planned)
+- Multi-entity support (GbR, joint accounts)
+- Black-Litterman portfolio optimisation
+- BaFin regulatory reporting automation
+
+---
+
+**Built for Project Francesca.**

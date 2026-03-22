@@ -224,7 +224,6 @@ def record_trade_outcome(proposal_id: str, pnl_eur: Decimal) -> None:
         )
         # Push drawdown change via OpenClaw (non-blocking, non-fatal)
         if _state.level != DrawdownLevel.NORMAL:
-            import asyncio
             asyncio.create_task(
                 openclaw_client.push_drawdown_alert(_state.level.value, drawdown)
             )
