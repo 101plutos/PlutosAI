@@ -1,0 +1,44 @@
+name: equity-research
+version: 1.0.0
+description: >
+  Generate an 8-section institutional equity research report (Goldman/JPMorgan style)
+  for any stock. Takes ~5 minutes. Returns Buy/Hold/Sell verdict, price target,
+  key risks and catalysts. English or German.
+author: PlutosAI / Project Francesca
+category: finance
+tags: [equity, research, stocks, analysis, buy, sell, hold, report]
+
+runtime: python3
+entry: handler.py
+invoke: handle
+
+triggers:
+  - "equity research"
+  - "stock report"
+  - "research report"
+  - "analyse"
+  - "initiation"
+  - "coverage"
+
+parameters:
+  - name: ticker
+    description: Stock ticker symbol (e.g. AAPL, SAP.DE, NVDA)
+    type: string
+    required: true
+  - name: company
+    description: Company name
+    type: string
+    required: false
+  - name: language
+    description: "en | de"
+    type: string
+    required: false
+    default: en
+
+env:
+  - PLUTOSAI_FINANCE_URL
+
+permissions:
+  - http.post
+
+timeout: 360

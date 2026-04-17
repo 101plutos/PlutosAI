@@ -1,0 +1,155 @@
+# Lobster Workflow: ledger-nightly-reconcile
+# Runs at 23:00 CET every night.
+# Fetches positions from exchanges, compares to LEDGER's internal state,
+# fires discrepancy alerts, and syncs QUANT equity.
+#
+# OpenClaw cron: 0 22 * * *  (22:00 UTC = 23:00 CET)
+
+name: ledger-nightly-reconcile
+description: "Nightly reconciliation: exchange positions vs internal ledger → sync QUANT equity"
+version: 1.0.0
+
+env:
+  FINANCE_URL: "${PLUTOSAI_FINANCE_URL:-http://localhost:8008}"
+  BINANCE_API_KEY: "${BINANCE_API_KEY:-}"
+  KRAKEN_API_KEY: "${KRAKEN_API_KEY:-}"
+
+steps:
+  # ─────────────────────────────────────────────
+  # Step 1: Fetch exchange positions
+  # Production: replace with real exchange API calls.
+  # Stub returns example positions for development.
+  # ─────────────────────────────────────────────
+  - id: fetch_exchange_positions
+    name: "Fetch live exchange positions"
+    run: |
+      # Production: use exchange APIs via authenticated calls
+      # Stub: return example positions
+      echo '{
+        "BTC": "0.5",
+        "ETH": "2.3",
+        "USDC": "1500.00"
+      }'
+    # TODO: replace stub with:
+    # python3 /home/user/PlutosAI/scripts/fetch_exchange_positions.py
+
+  # ─────────────────────────────────────────────
+  # Step 2: Reconcile via LEDGER
+  # ─────────────────────────────────────────────
+  - id: reconcile
+    name: "LEDGER: Reconcile positions"
+    run: |
+      TODAY=$(date +%Y-%m-%d)
+      EXCHANGE=$(echo '${{ steps.fetch_exchange_positions.stdout }}')
+
+      # Internal positions — in production, fetched from LEDGER state
+      # For now, use exchange as both to demonstrate pipeline
+      curl -s -X POST "${FINANCE_URL}/ledger/reconcile" \
+        -H "Content-Type: application/json" \
+        -d "{
+          \"date\": \"${TODAY}\",
+          \"internal_positions\": ${EXCHANGE},
+          \"exchange_positions\": ${EXCHANGE}
+        }"
+    timeout: 30
+
+  # ─────────────────────────────────────────────
+  # Step 3: Alert if discrepancies found
+  # ─────────────────────────────────────────────
+  - id: check_discrepancies
+    name: "Check for discrepancies"
+    run: |
+      RESULT='${{ steps.reconcile.stdout }}'
+      MATCHED=$(echo "$RESULT" | python3 -c "
+      import sys, json
+      d = json.load(sys.stdin)
+      print('true' if d['all_matched'] else 'false')
+      ")
+
+      if [ "$MATCHED" = "false" ]; then
+        echo "🔴 LEDGER DISCREPANCY DETECTED"
+        echo ""
+        echo "$RESULT" | python3 -c "
+      import sys, json
+      d = json.load(sys.stdin)
+      for disc in d['discrepancies']:
+          print(f'  {disc[\"symbol\"]}: internal={disc[\"internal\"]} exchange={disc[\"exchange\"]} diff={disc[\"difference\"]}')
+      "
+        echo ""
+        echo "⚠️ Review required before QUANT equity sync."
+      else
+        echo "✅ All positions match — clean reconciliation."
+      fi
+    send_to_session: main
+
+  # ─────────────────────────────────────────────
+  # Step 4: Record net worth snapshot
+  # ─────────────────────────────────────────────
+  - id: net_worth_snapshot
+    name: "Record net worth snapshot"
+    run: |
+      # Calculate totals from exchange positions
+      # Production: multiply quantities by current market prices
+      # Stub values for development
+      LIQUID="8500"
+      ILLIQUID="0"
+      CRYPTO="2500"
+
+      curl -s -X POST "${FINANCE_URL}/ledger/net-worth" \
+        -H "Content-Type: application/json" \
+        --data-urlencode "liquid_eur=${LIQUID}" \
+        --data-urlencode "illiquid_eur=${ILLIQUID}" \
+        --data-urlencode "crypto_eur=${CRYPTO}" \
+        -G
+    timeout: 15
+
+  # ─────────────────────────────────────────────
+  # Step 5: Sync QUANT equity (only if clean reconciliation)
+  # ─────────────────────────────────────────────
+  - id: sync_quant_equity
+    name: "Sync QUANT equity from LEDGER"
+    run: |
+      MATCHED=$(echo '${{ steps.reconcile.stdout }}' | python3 -c "
+      import sys, json; d = json.load(sys.stdin); print('true' if d['all_matched'] else 'false')
+      ")
+
+      if [ "$MATCHED" = "true" ]; then
+        TOTAL=$(echo '${{ steps.net_worth_snapshot.stdout }}' | python3 -c "
+      import sys, json; print(json.load(sys.stdin)['total_eur'])
+        ")
+        curl -s -X POST "${FINANCE_URL}/quant/equity" \
+          -H "Content-Type: application/json" \
+          -G --data-urlencode "current_equity_eur=${TOTAL}"
+        echo "✅ QUANT equity synced: €${TOTAL}"
+      else
+        echo "⚠️ Skipping QUANT sync — reconciliation had discrepancies."
+      fi
+    timeout: 15
+
+  # ─────────────────────────────────────────────
+  # Step 6: Send nightly summary to Flo
+  # ─────────────────────────────────────────────
+  - id: nightly_summary
+    name: "Deliver nightly summary"
+    run: |
+      TODAY=$(date +%Y-%m-%d)
+      SNAP='${{ steps.net_worth_snapshot.stdout }}'
+      MATCHED=$(echo '${{ steps.reconcile.stdout }}' | python3 -c "
+      import sys, json; d = json.load(sys.stdin); print('✅ Clean' if d['all_matched'] else '⚠️ Discrepancy')
+      ")
+
+      echo "$SNAP" | python3 -c "
+      import sys, json
+      s = json.load(sys.stdin)
+      print(f'''🌙 *Nightly Reconciliation — ${TODAY}*
+
+Reconciliation: ${MATCHED}
+
+💰 Net Worth Snapshot
+  Total:    €{float(s[\"total_eur\"]):,.2f}
+  Liquid:   €{float(s[\"liquid_eur\"]):,.2f}
+  Crypto:   €{float(s[\"crypto_eur\"]):,.2f}
+
+  Sparerpauschbetrag: €{float(s[\"sparerpauschbetrag_used_eur\"]):,.2f} used / €1,000''')
+      "
+    send_to_session: main

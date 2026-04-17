@@ -1,0 +1,90 @@
+# Lobster Workflow: oracle-morning-brief
+# Triggered at 06:30 CET (Mon–Fri) by OpenClaw cron.
+# Generates the morning market briefing and delivers it via Flo's preferred channel.
+#
+# Cron expression (OpenClaw format): 30 5 * * 1-5
+#   (05:30 UTC = 06:30 CET, Monday–Friday)
+#
+# The weekly German BBBank briefing runs on Monday at 06:00 CET:
+#   Cron: 0 5 * * 1
+
+name: oracle-morning-brief
+description: "Generate morning market briefing and push to Flo's channel"
+version: 1.0.0
+
+env:
+  FINANCE_URL: "${PLUTOSAI_FINANCE_URL:-http://localhost:8008}"
+
+steps:
+  # ─────────────────────────────────────────────
+  # Step 1: Check for active P0 alerts first
+  # ─────────────────────────────────────────────
+  - id: check_alerts
+    name: "Check overnight P0/P1 alerts"
+    run: |
+      curl -s "${FINANCE_URL}/oracle/alerts"
+
+  # ─────────────────────────────────────────────
+  # Step 2: Generate morning briefing
+  # ─────────────────────────────────────────────
+  - id: generate_brief
+    name: "ORACLE: Generate morning briefing"
+    run: |
+      # Monday = weekly German briefing, other days = English morning
+      DAY=$(date +%u)
+      if [ "$DAY" = "1" ]; then
+        SCOPE="weekly"
+        LANG="de"
+      else
+        SCOPE="morning"
+        LANG="en"
+      fi
+
+      curl -s -X POST "${FINANCE_URL}/oracle/briefing" \
+        -H "Content-Type: application/json" \
+        -d "{
+          \"language\": \"${LANG}\",
+          \"scope\": \"${SCOPE}\",
+          \"include_sectors\": [\"DAX 40\", \"S&P 500\", \"BTC/ETH\", \"EUR/USD\"],
+          \"style\": \"bbbank_internal\"
+        }"
+    timeout: 90
+
+  # ─────────────────────────────────────────────
+  # Step 3: Format and deliver via OpenClaw
+  # ─────────────────────────────────────────────
+  - id: deliver
+    name: "Deliver briefing to Flo"
+    pipeline: |
+      You are formatting a market briefing for mobile delivery.
+      Trim to max 1000 words. Keep key figures. Use Telegram markdown.
+      Start with the headline in bold. Add a separator line after.
+      Input: ${{ steps.generate_brief.stdout }}
+    # OpenClaw delivers the pipeline output to the configured default channel
+    send_to_session: main
+
+  # ─────────────────────────────────────────────
+  # Step 4: Deliver overnight alerts if any
+  # ─────────────────────────────────────────────
+  - id: deliver_alerts
+    name: "Deliver any overnight alerts"
+    run: |
+      ALERT_COUNT=$(echo '${{ steps.check_alerts.stdout }}' | python3 -c "
+      import sys, json
+      alerts = json.load(sys.stdin)
+      print(len(alerts))
+      " 2>/dev/null || echo "0")
+
+      if [ "$ALERT_COUNT" -gt "0" ]; then
+        echo "⚠️ $ALERT_COUNT overnight alert(s) pending review."
+        echo ""
+        echo '${{ steps.check_alerts.stdout }}' | python3 -c "
+      import sys, json
+      for a in json.load(sys.stdin):
+          emoji = '🚨' if a['severity'] == 'P0' else '⚠️'
+          print(f'{emoji} {a[\"severity\"]}: {a[\"trigger\"]}')
+          print(f'   {a[\"narrative\"][:120]}')
+          print()
+      "
+      fi
+    send_to_session: main

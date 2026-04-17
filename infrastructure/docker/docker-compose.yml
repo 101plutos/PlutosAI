@@ -182,6 +182,57 @@ services:
       timeout: 10s
       retries: 3
 
+  # Finance Division — COMPLIANCE, QUANT, ORACLE, BANKER, LEDGER + 3 skills
+  finance-service:
+    build:
+      context: ../../services/finance-service
+      dockerfile: Dockerfile
+    ports:
+      - "8008:8008"
+    environment:
+      - FIN_REDIS_HOST=redis
+      - FIN_REDIS_PORT=6379
+      - FIN_REDIS_DB=3
+      - FIN_OPENAI_API_KEY=${OPENAI_API_KEY}
+      - FIN_OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      - FIN_DEFAULT_MODEL=${FIN_DEFAULT_MODEL:-gpt-4o}
+      - FIN_MAX_SINGLE_POSITION_EUR=${FIN_MAX_SINGLE_POSITION_EUR:-5000}
+      - FIN_MAX_DAILY_LOSS_EUR=${FIN_MAX_DAILY_LOSS_EUR:-500}
+      # OpenClaw gateway — set to ws://host.docker.internal:18789 if OpenClaw runs on host
+      - FIN_OPENCLAW_GATEWAY_URL=${OPENCLAW_GATEWAY_URL:-}
+      - FIN_OPENCLAW_DEFAULT_SESSION=${OPENCLAW_DEFAULT_SESSION:-main}
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8008/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Simulation Service — MiroFish-inspired Financial Prediction Engine
+  simulation-service:
+    build:
+      context: ../../services/simulation-service
+      dockerfile: Dockerfile
+    ports:
+      - "8007:8007"
+    environment:
+      - SIM_REDIS_HOST=redis
+      - SIM_REDIS_PORT=6379
+      - SIM_REDIS_DB=2
+      - SIM_OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SIM_OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      - SIM_DEFAULT_MODEL=${SIM_DEFAULT_MODEL:-gpt-4o}
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8007/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   # API Gateway
   gateway-service:
     build:
@@ -196,6 +247,8 @@ services:
       - REPORTING_SERVICE_URL=http://reporting-service:8000
       - AI_SERVICE_URL=http://ai-service:8000
       - BLOCKCHAIN_SERVICE_URL=http://blockchain-service:8000
+      - SIMULATION_SERVICE_URL=http://simulation-service:8007
+      - FINANCE_SERVICE_URL=http://finance-service:8008
       - JWT_SECRET_KEY=your-development-secret-key
     depends_on:
       - client-service
@@ -204,6 +257,8 @@ services:
       - reporting-service
       - ai-service
       - blockchain-service
+      - simulation-service
+      - finance-service
 
   # Monitoring
   prometheus:

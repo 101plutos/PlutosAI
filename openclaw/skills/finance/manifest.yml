@@ -1,0 +1,57 @@
+name: finance
+version: 1.0.0
+description: >
+  Finance Division gateway — access QUANT (trade evaluation), LEDGER (net worth,
+  tax events), and live compliance status. The single command you need for your
+  daily financial picture.
+author: PlutosAI / Project Francesca
+category: finance
+tags: [trading, compliance, portfolio, tax, german, bbbank]
+
+runtime: python3
+entry: handler.py
+invoke: handle
+
+triggers:
+  - "finance status"
+  - "finance summary"
+  - "quant evaluate"
+  - "trade eval"
+  - "net worth"
+  - "daily pnl"
+  - "drawdown"
+  - "compliance status"
+  - "finanzübersicht"
+
+parameters:
+  - name: action
+    description: >
+      What to do: "status" (default dashboard), "trade" (evaluate a trade),
+      "networth" (net worth snapshot), "audit" (last 10 compliance decisions)
+    type: string
+    required: false
+    default: status
+  - name: symbol
+    description: Ticker or market symbol (for trade evaluation)
+    type: string
+    required: false
+  - name: size
+    description: Position size in EUR (for trade evaluation)
+    type: number
+    required: false
+  - name: direction
+    description: "long | short | close"
+    type: string
+    required: false
+
+# Environment requirements
+env:
+  - PLUTOSAI_FINANCE_URL   # finance-service base URL, e.g. http://plutos:8008
+
+# Permissions this skill needs from OpenClaw
+permissions:
+  - http.get
+  - http.post
+
+# How long OpenClaw waits before timing out (seconds)
+timeout: 45

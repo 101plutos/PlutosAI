@@ -1,0 +1,51 @@
+name: oracle
+version: 1.0.0
+description: >
+  ORACLE market intelligence — request briefings, view active P0/P1 alerts,
+  push a manual price move, or trigger the next scheduled market report.
+  German or English. BBBank or DISPATCH style.
+author: PlutosAI / Project Francesca
+category: finance
+tags: [markets, alerts, DAX, BTC, briefing, deutsch, FX, oracle]
+
+runtime: python3
+entry: handler.py
+invoke: handle
+
+triggers:
+  - "oracle"
+  - "market brief"
+  - "morning brief"
+  - "marktbericht"
+  - "market alerts"
+  - "p0 alert"
+  - "what's moving"
+  - "was läuft"
+  - "DAX"
+  - "BTC"
+  - "weekly summary"
+
+parameters:
+  - name: action
+    description: "alerts | brief | morning | weekly | snapshot"
+    type: string
+    required: false
+    default: alerts
+  - name: language
+    description: "de | en"
+    type: string
+    required: false
+    default: en
+  - name: scope
+    description: "morning | european_close | us_close | weekly"
+    type: string
+    required: false
+
+env:
+  - PLUTOSAI_FINANCE_URL
+
+permissions:
+  - http.get
+  - http.post
+
+timeout: 90

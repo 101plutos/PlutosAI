@@ -1,8 +1,12 @@
-from fastapi import FastAPI, Request
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
+import os
 import time
+
+import httpx
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import Response
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from shared.auth import verify_jwt  # Assuming shared auth module
 
@@ -11,6 +15,19 @@ app = FastAPI(title="PlutosAI Gateway Service")
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Service URLs — injected via environment in docker-compose
+_SERVICE_URLS = {
+    "client":     os.getenv("CLIENT_SERVICE_URL", "http://localhost:8001"),
+    "investment": os.getenv("INVESTMENT_SERVICE_URL", "http://localhost:8002"),
+    "compliance": os.getenv("COMPLIANCE_SERVICE_URL", "http://localhost:8003"),
+    "reporting":  os.getenv("REPORTING_SERVICE_URL", "http://localhost:8004"),
+    "ai":         os.getenv("AI_SERVICE_URL", "http://localhost:8005"),
+    "blockchain": os.getenv("BLOCKCHAIN_SERVICE_URL", "http://localhost:8006"),
+    "simulation": os.getenv("SIMULATION_SERVICE_URL", "http://localhost:8007"),
+    "finance":    os.getenv("FINANCE_SERVICE_URL", "http://localhost:8008"),
+}
+
 
 # Profiling middleware
 @app.middleware("http")
@@ -21,10 +38,67 @@ async def profile_request(request: Request, call_next):
     print(f"Request to {request.url.path} took {process_time:.2f} seconds")
     return response
 
-# Example route with rate limiting
+
 @app.get("/health")
 @limiter.limit("5/minute")
 def health(request: Request):
     return {"status": "healthy"}
 
-# TODO: Add routes proxying to other services with auth verification
+
+async def _proxy(request: Request, service: str, path: str) -> Response:
+    """Generic reverse proxy — forwards request to a downstream service."""
+    base = _SERVICE_URLS.get(service)
+    if not base:
+        raise HTTPException(status_code=502, detail=f"Unknown service: {service}")
+
+    url = f"{base}{path}"
+    body = await request.body()
+    headers = dict(request.headers)
+    headers.pop("host", None)
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        try:
+            resp = await client.request(
+                method=request.method,
+                url=url,
+                headers=headers,
+                content=body,
+                params=dict(request.query_params),
+            )
+        except httpx.ConnectError:
+            raise HTTPException(status_code=503, detail=f"Service '{service}' unreachable")
+
+    return Response(
+        content=resp.content,
+        status_code=resp.status_code,
+        headers=dict(resp.headers),
+        media_type=resp.headers.get("content-type"),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Simulation Service routes — /simulate/* → simulation-service:8007
+# ---------------------------------------------------------------------------
+@app.api_route("/simulate", methods=["GET", "POST"])
+@app.api_route("/simulate/{path:path}", methods=["GET", "POST", "DELETE"])
+async def simulation_proxy(request: Request, path: str = "") -> Response:
+    """Proxy all /simulate/* requests to the Simulation Service."""
+    route_path = f"/simulate/{path}" if path else "/simulate"
+    return await _proxy(request, "simulation", route_path)
+
+
+# ---------------------------------------------------------------------------
+# Finance Division routes — /finance/* + /compliance/* + /quant/* etc.
+# ---------------------------------------------------------------------------
+_FINANCE_PREFIXES = (
+    "/finance", "/compliance", "/quant", "/oracle", "/banker", "/ledger", "/skills"
+)
+
+
+@app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def finance_proxy(request: Request, path: str) -> Response:
+    """Proxy Finance Division agent and skill routes to finance-service:8008."""
+    full_path = f"/{path}"
+    if any(full_path.startswith(prefix) for prefix in _FINANCE_PREFIXES):
+        return await _proxy(request, "finance", full_path)
+    raise HTTPException(status_code=404, detail=f"Route '{full_path}' not found")

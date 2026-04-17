@@ -1,0 +1,45 @@
+name: banker
+version: 1.0.0
+description: >
+  BANKER — BBBank eG retail banking advisor. Ask about products
+  (VL-ETF, Baufinanzierung, Tagesgeld, Depot), run MiFID II suitability checks,
+  or start a Praxisnachweis client scenario role-play.
+author: PlutosAI / Project Francesca
+category: finance
+tags: [bbbank, mifid, banking, VL, baufinanzierung, depot, praxisnachweis, german]
+
+runtime: python3
+entry: handler.py
+invoke: handle
+
+triggers:
+  - "banker"
+  - "bbbank"
+  - "mifid"
+  - "suitability"
+  - "VL ETF"
+  - "baufinanzierung"
+  - "tagesgeld"
+  - "praxisnachweis"
+  - "beratungsgespräch"
+  - "depot"
+  - "mortgage"
+
+parameters:
+  - name: action
+    description: "product | suitability | scenario"
+    type: string
+    required: false
+    default: product
+  - name: query
+    description: The question or scenario to pass to BANKER
+    type: string
+    required: false
+
+env:
+  - PLUTOSAI_FINANCE_URL
+
+permissions:
+  - http.post
+
+timeout: 60
